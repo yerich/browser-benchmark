@@ -365,13 +365,13 @@ const renderInfo = () => {
         <p>This benchmark is designed to test your browser's ability to maintain a smooth frame rate while scrolling.</p>
         <button id="run">Start Benchmark</button>
         <p class="more-info">
-            These tests are meant to put the browser's renderer under stress, with minimal JavaScript execution
+            Scrollmark consists of four tests which are designed to put the browser's renderer under stress, with minimal JavaScript execution
             overhead per frame. While for most of these benchmarks, scrolling is not necessary for the browser's
             performance to degrade, it is included to ensure that the browser is not throttling the frame rate, and to
             give the user an obvious visual indicator of the browser's performance.
         </p>
         <p class="more-info">
-            Scrollmark version 1.0
+            Scrollmark version 1.0 | <a href="https://github.com/yerich/browser-benchmark">GitHub</a>
         </p>
     `;
     document.getElementById('run').onclick = runTests;

@@ -74,7 +74,7 @@
 <script>
 let avgFps = 60;
 let skipFrameForFps = false;
-let results = [[1, 1]];
+let results = null;
 let testRunning = false;
 const test = document.getElementById("test");
 const stats = document.getElementById("test-stats");
@@ -340,8 +340,8 @@ const renderInfo = () => {
             <p>Test conditions:</p>
             <table>
                 <tr>
-                    <td>User Agent Data</td>
-                    <td>${navigator.userAgentData.filter(v => v.brand != 'Not_A Brand').map(v.brand + ' v' + v.version).join(', ')}</td>
+                    <td>User Agent</td>
+                    <td>${navigator.userAgent}</td>
                 </tr>
                 <tr>
                     <td>OS</td>

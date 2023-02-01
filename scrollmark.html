@@ -105,7 +105,7 @@ function mulberry32(a) {
     }
 }
 
-let random = mulberry32(1337);
+let random = mulberry32(31415);
 
 const generateNoiseImage = () => {
     let canvas = document.createElement('canvas');
@@ -340,7 +340,7 @@ const renderInfo = () => {
         return;
     }
     if (results) {
-        const resultWeights = [0.031078, 0.66313, 2.48139, 1.23001];
+        const resultWeights = [0.036744, 0.67476, 2.37529, 1.73010];
 
         info.innerHTML = `
         <span class="final-score-label">Benchmark result:</span>

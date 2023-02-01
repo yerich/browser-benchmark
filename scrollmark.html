@@ -195,8 +195,17 @@ const startScrolling = () => {
     let currScroll = 0;
     let maxScroll = window.innerHeight * 2 - window.innerHeight;
     let scrollDir = 2;
+    let stop = false;
 
-    return setInterval(() => {
+    const stopScroll = () => {
+        stop = true;
+    };
+
+    const scroll = () => {
+        if (stop) {
+            return;
+        }
+
         currScroll += scrollDir;
         if (currScroll >= maxScroll) {
             currScroll = maxScroll;
@@ -209,10 +218,14 @@ const startScrolling = () => {
         if ((scrollDir > 0 && currScroll < maxScroll / 2) || (scrollDir < 0 && currScroll > maxScroll / 2)) {
             scrollDir *= 1.05;
         } else {
-            scrollDir /= 1.05;
+            scrollDir = scrollDir > 0 ? Math.max(2, scrollDir / 1.05) : Math.min(-2, scrollDir / 1.05);
         }
         window.scrollTo(0, currScroll);
-    }, 1000 / 60);
+        requestAnimationFrame(scroll);
+    };
+
+    requestAnimationFrame(scroll);
+    return stopScroll;
 };
 
 const reset = () => {
@@ -244,7 +257,7 @@ const numDivsTest = ({styleFn, testName}) => {
     }
 
     reset();
-    let scrollInterval = startScrolling();
+    let stopScrolling = startScrolling();
 
     let i = 0;
     let minDivs = 1;
@@ -316,7 +329,7 @@ const numDivsTest = ({styleFn, testName}) => {
                 let [slope, intercept, r2] = linearRegression(records);
                 let score = Math.round(slope * 40 + intercept);
 
-                clearInterval(scrollInterval);
+                stopScrolling();
                 reset();
                 resolve(score);
             }
@@ -393,7 +406,7 @@ const renderInfo = () => {
             over many smooth ones.
         </p>
         <p class="more-info">
-            Scrollmark version 1.0 | <a href="https://github.com/yerich/browser-benchmark">GitHub</a>
+            Scrollmark version 1.1 | <a href="https://github.com/yerich/browser-benchmark">GitHub</a>
         </p>
     `;
     document.getElementById('run').onclick = runTests;

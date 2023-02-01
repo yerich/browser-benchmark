@@ -26,6 +26,20 @@
             0% { padding-left: 0; padding-right: 0;}
         }
 
+        @keyframes repaint-bg {
+            0% { background-position: 0 0; background-size: 300% 100%; }
+            25% { background-position: 100% 100%; background-size: 250% 100%; }
+            50% { background-position: 0 100%; background-size: 300% 120%; }
+            75% { background-position: 100% 0; background-size: 250% 120%; }
+        }
+
+        @keyframes repaint-text {
+            0% { color: rgba(33, 37, 70, 0.4); }
+            25% {color: rgba(77, 33, 69, 0.4); }
+            50% { color: rgba(60, 77, 33, 0.4); }
+            75% { color: rgba(33, 77, 77, 0.4); }
+        }
+
         body { margin: 0; padding: 0; font-family: 'Prompt', sans-serif; }
 
         #header { position: fixed; top: 20%; left: 10px; padding: 0; z-index: 1;}
@@ -55,8 +69,11 @@
         td:first-child { min-width: 100px; }
 
         .compositor-test { position: absolute; backface-visibility: hidden;}
-        .text-and-images { background-size: 300% 100%; background-blend-mode: soft-light; overflow: hidden; font-weight: bold;
-            color: rgba(0, 0, 0, 0.4); padding: 5px; box-sizing: border-box; box-shadow: 0 0 15px 15px rgba(0, 0, 0, 0.1); }
+        .repaint { overflow: hidden; font-weight: bold;
+            color: rgba(0, 0, 0, 0.4); padding: 5px; box-sizing: border-box; box-shadow: 0 0 15px 15px rgba(0, 0, 0, 0.1);
+            animation: jiggle 100s infinite, repaint-text 10s infinite; }
+        .repaint-bg { opacity: 0.1; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: 300% 100%;
+            animation: repaint-bg 10s infinite;}
         .compositor-test.reflow { position: static; display: inline-block; backface-visibility: hidden; animation: reflow 5s ease-in-out infinite alternate;
             padding: 0; }
     </style>
@@ -231,7 +248,7 @@ const numDivsTest = ({styleFn, testName}) => {
 
     let i = 0;
     let minDivs = 1;
-    let maxDivs = 10e100;
+    let maxDivs = Infinity;
     let currDivs = 100;
     let checkDelay = 3000;
     let records = [];
@@ -259,7 +276,7 @@ const numDivsTest = ({styleFn, testName}) => {
             i++;
             let now = performance.now();
             if (now - last > checkDelay) {
-                last = 10e100;
+                last = Infinity;
                 waitSomeFrames();
                 // binary search with no initial upper bound
 
@@ -269,10 +286,10 @@ const numDivsTest = ({styleFn, testName}) => {
 
                 if (avgFps > 40) {
                     minDivs = Math.max(minDivs, currDivs);
-                    if (maxDivs == 10e100) {
-                        if (avgFps >= 119) currDivs *= 3;
-                        else if (avgFps >= 59) currDivs *= 2;
-                        else currDivs *= 1.5;
+                    if (maxDivs == Infinity) {
+                        if (avgFps >= 119) currDivs = Math.min(currDivs + 5000, currDivs * 3);
+                        else if (avgFps >= 59) currDivs = Math.min(currDivs + 5000, currDivs * 2);
+                        else currDivs = Math.min(currDivs + 5000, currDivs * 1.5);
                     } else {
                         currDivs = Math.floor((minDivs + maxDivs) / 2);
                     }
@@ -323,7 +340,7 @@ const renderInfo = () => {
         return;
     }
     if (results) {
-        const resultWeights = [0.035118, 0.81234, 0.78554, 1.10987];
+        const resultWeights = [0.031078, 0.66313, 2.48139, 1.23001];
 
         info.innerHTML = `
         <span class="final-score-label">Benchmark result:</span>
@@ -371,6 +388,11 @@ const renderInfo = () => {
             give the user an obvious visual indicator of the browser's performance.
         </p>
         <p class="more-info">
+            FPS calculations for this benchmark are performed somewhat differently than in standard benchmarks. Instead of averaging the FPS
+            over a given time period, the average is computed over a fixed number of frames. This is done so that a few laggy frames don't have
+            a huge impact on the final results.
+        </p>
+        <p class="more-info">
             Scrollmark version 1.0 | <a href="https://github.com/yerich/browser-benchmark">GitHub</a>
         </p>
     `;
@@ -382,7 +404,7 @@ async function runTests() {
     results = null;
     renderInfo();
 
-    let compositeOnly = await numDivsTest({
+    let rerender = await numDivsTest({
         styleFn: (div) => {
             div.style.width = (15 + random() * 15) + 'px';
             div.style.height = (15 + random() * 15) + 'px';
@@ -390,7 +412,7 @@ async function runTests() {
             div.style.opacity = 0.2 + random() * 0.8;
             div.style.transform = 'skew(' + (-20 + random() * 40) + 'deg, ' + (-20 + random() * 40) + 'deg)';
         },
-        testName: "composite-only"
+        testName: "rerender"
     });
 
     let recomposite = await numDivsTest({
@@ -406,16 +428,14 @@ async function runTests() {
         testName: "recomposite"
     });
 
-    let textAndImages = await numDivsTest({
+    let repaint = await numDivsTest({
         styleFn: (div) => {
-            div.classList.add('text-and-images');
+            div.classList.add('repaint');
             div.style.width = (50 + random() * 100) + 'px';
             div.style.height = (50 + random() * 100) + 'px';
-            div.style.backgroundImage = 'url(' + images[Math.floor(random() * images.length)] + ')';
             div.style.backgroundColor = 'hsl(' + random() * 360 + ', 100%, 80%)';
             div.style.opacity = 0.2 + random() * 0.8;
             div.style.fontSize = (80 + random() * 200) + '%';
-            div.style.animation = 'jiggle 100s infinite';
             div.style.animationDelay = -100 * random() + 's';
             if (random() > 0.5) {
                 div.style.borderRadius = '50% 0 50% 0';
@@ -423,8 +443,13 @@ async function runTests() {
                 div.style.borderRadius = '0 50% 0 50%';
             }
             div.innerHTML = randomText[Math.floor(random() * randomText.length)];
+
+            const bgDiv = document.createElement('div');
+            bgDiv.classList.add('repaint-bg');
+            bgDiv.style.backgroundImage = 'url(' + images[Math.floor(random() * images.length)] + ')';
+            div.appendChild(bgDiv);
         },
-        testName: "text-and-images"
+        testName: "repaint"
     });
 
     let reflow = await numDivsTest({
@@ -439,9 +464,9 @@ async function runTests() {
 
     testRunning = false;
     results = [
-        ["composite-only", compositeOnly],
+        ["rerender", rerender],
         ["recomposite", recomposite],
-        ["text-and-images", textAndImages],
+        ["repaint", repaint],
         ["reflow", reflow]
     ];
     renderInfo();
